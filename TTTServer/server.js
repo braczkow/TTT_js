@@ -8,10 +8,17 @@ var playerToPlayer = {};
 var gameSessions = {};
 
 var freePlayerId = -1;
+
+function getPlayersTuple(playerA, playerB) {
+	var playerMin = (playerA < playerB ? playerA : playerB);
+	var playerMax = (playerA > playerB ? playerA : playerB);
+	
+	return [playerMin, playerMax];
+}
  
  
 var server = ws.createServer(function (conn) {
-    console.log("connected.");
+    console.log("createServer: connected.");
 	
 	playerId++;
 	
@@ -19,8 +26,15 @@ var server = ws.createServer(function (conn) {
 	playerIdToConn[playerId] = conn;
 	
 	if (freePlayerId === -1) {
+		console.log("createServer: none is waiting");
 		freePlayerId = playerId;
 		playerToPlayer[playerId] = -1;
+		
+		var messageToThisPlayer = 
+		{
+			type: "opponent_NA"
+		}
+		conn.sendText(JSON.stringify(messageToThisPlayer));
 		
 	}
 	else {
@@ -41,13 +55,15 @@ var server = ws.createServer(function (conn) {
 		
 		var messageToFreePlayer = 
 		{
+			type: "opponent_init",
 			opponentId: playerId
 		};
 		playerIdToConn[freePlayerId].sendText(JSON.stringify(messageToFreePlayer));	
 		
 		var messageToThisPlayer = 
 		{
-			oponenId: freePlayerId
+			type: "opponent_init",
+			opponentId: freePlayerId
 		}
 		conn.sendText(JSON.stringify(messageToThisPlayer));
 		
@@ -59,46 +75,62 @@ var server = ws.createServer(function (conn) {
 	});
 		
 
-    conn.on("text", function (message) {
+    conn.on("text", function (text) {
+		
+		console.log("onMessage: " + text);
+		var message = JSON.parse(text);
+		
+		if (message.type == "field_clicked") {
+			console.log("onMessage: field_clicked");
+			var fieldId = message.fieldId;
 	
-		var myId = connToPlayerId[conn];
-		console.log('myId= ' + myId);	
+			var playerId = connToPlayerId[conn];
+			console.log('onMessage: playerId= ' + playerId);	
 
-		var opponentId = playerToPlayer[myId];
-		console.log('opponentId = ' + opponentId);
-		
-		if (opponentId < 0)
-		{
-			var errMessage = 
+			var opponentId = playerToPlayer[playerId];
+			console.log('onMessage: opponentId = ' + opponentId);
+			
+			if (opponentId < 0)
 			{
-				error: "no_opponent"
-			};
+				var errMessage = 
+				{
+					error: "no_opponent"
+				};
+				
+				conn.sendText(JSON.stringify(errMessage));
+				return;
+			}
 			
-			conn.sendText(JSON.stringify(errMessage));
-			return;
+			var playersTuple = getPlayersTuple(playerId, opponentId),
+			gameSession = gameSessions[playersTuple];
+			
+			console.log('onMessage: gameSession.gameState[fieldId] ' + gameSession.gameState[fieldId]);
+			
+			if (gameSession.gameState[fieldId] == 0)
+			{
+				console.log('onMessage: not clicked yet');
+				gameSession.gameState[fieldId] = playerId;
+			}
 		}
-		
-		
-
-		
-		if (opponentId > 0)
-		{			
-			var playerA = (myId < opponentId ? myId : opponentId);
-			var playerB = (myId > opponentId ? myId : opponentId);
-			
-			console.log("playerA: ", playerA);
-			console.log("playerB: ", playerB);
-			
-			console.log(gameSessions[[playerA, playerB]].gameState);
-		}
-		
-		
 		
     })
 	
     conn.on("close", function (code, reason) {
         console.log("closed.");
-		//conn.close();
+		
+		var playerId = connToPlayer[conn];
+		console.log("onClose: player " + playerId + " quit");
+		
+		var opponentId = playerToPlayer[playerId];
+		console.log("onClose: opponentId: " + opponentId);
+		
+		if (opponentId) {
+			console.log("Inform opponent, that player quit.");
+			var opponentConnection = playerToConn[opponentId];
+			if (opponentConnection) {
+				opponentConnection.sendText(JSON.stringify({ type: "opponent_quit" }));
+			}
+		}
 				
     })
 }).listen(8001).on('error', function(err) { console.log("caught erro: " + err); } );
