@@ -15,59 +15,85 @@ function getPlayersTuple(playerA, playerB) {
 	
 	return [playerMin, playerMax];
 }
- 
- 
-var server = ws.createServer(function (conn) {
-    console.log("createServer: connected.");
+
+function initializePlayer(conn) {
+	console.log("initializePlyaer");
 	
 	playerId++;
 	
 	connToPlayerId[conn] = playerId;
 	playerIdToConn[playerId] = conn;
 	
-	if (freePlayerId === -1) {
-		console.log("createServer: none is waiting");
-		freePlayerId = playerId;
-		playerToPlayer[playerId] = -1;
-		
-		var messageToThisPlayer = 
-		{
-			type: "opponent_NA"
-		}
-		conn.sendText(JSON.stringify(messageToThisPlayer));
-		
+}
+	
+function addWaitingPlayer(conn) {
+	console.log("addWaitingPlayer");
+
+	freePlayerId = playerId;
+	playerToPlayer[playerId] = -1;
+	
+	var messageToThisPlayer = 
+	{
+		type: "opponent_NA"
+	}
+	conn.sendText(JSON.stringify(messageToThisPlayer));
+}
+
+function initializeGameSession() {
+	console.log("initializeGameSession");
+	
+	playerToPlayer[freePlayerId] = playerId;
+	playerToPlayer[playerId] = freePlayerId;
+	
+	var playersTuple = getPlayersTuple(playerId, freePlayerId);
+	
+	console.log("initializeGameSession : playersTuple " + playersTuple);
+	
+	var gameSession = 
+	{
+		gameState:[0, 0, 0, 0, 0, 0, 0, 0, 0], 
+		playerA: playersTuple[0],
+		playerB: playersTuple[1],
+	};
+	
+	gameSessions[playersTuple] = gameSession;
+
+	sendOpponentInit(playersTuple[0], playersTuple[1]);
+	
+	sendOpponentInit(playersTuple[1], playersTuple[0]);
+	
+	freePlayerId = -1;
+}
+
+function sendOpponentInit(playerA, playerB) {
+	console.log("sendOpponentInit");
+	
+	var message = 
+	{
+		type: "opponent_init",
+		opponentId: playerB
+	};
+	
+	if (playerIdToConn[playerA]) {
+		console.log("sendOpponentInit : connection exists.");
+		playerIdToConn[playerA].sendText(JSON.stringify(message));	
 	}
 	else {
-		playerToPlayer[freePlayerId] = playerId;
-		playerToPlayer[playerId] = freePlayerId;
-		
-		var playerA = (playerId < freePlayerId ? playerId : freePlayerId);
-		var playerB = (playerId > freePlayerId ? playerId : freePlayerId);
-		
-		var gameSession = 
-		{
-			gameState:[0, 0, 0, 0, 0, 0, 0, 0, 0], 
-			playerA: playerA,
-			playerB: playerB,
-		};
-		
-		gameSessions[[playerA, playerB]] = gameSession;
-		
-		var messageToFreePlayer = 
-		{
-			type: "opponent_init",
-			opponentId: playerId
-		};
-		playerIdToConn[freePlayerId].sendText(JSON.stringify(messageToFreePlayer));	
-		
-		var messageToThisPlayer = 
-		{
-			type: "opponent_init",
-			opponentId: freePlayerId
-		}
-		conn.sendText(JSON.stringify(messageToThisPlayer));
-		
-		freePlayerId = -1;
+		console.log("sendOpponentInit : no connection.");
+	}
+}
+ 
+ 
+var server = ws.createServer(function (conn) {
+    console.log("createServer: connected.");
+	
+	initializePlayer(conn);
+
+	if (freePlayerId === -1) {
+		addWaitingPlayer(conn);
+	}
+	else {
+		initializeGameSession();
 	}
 	
 	conn.on('error', function(err) {
@@ -118,7 +144,7 @@ var server = ws.createServer(function (conn) {
     conn.on("close", function (code, reason) {
         console.log("closed.");
 		
-		var playerId = connToPlayer[conn];
+		var playerId = connToPlayerId[conn];
 		console.log("onClose: player " + playerId + " quit");
 		
 		var opponentId = playerToPlayer[playerId];
@@ -126,7 +152,7 @@ var server = ws.createServer(function (conn) {
 		
 		if (opponentId) {
 			console.log("Inform opponent, that player quit.");
-			var opponentConnection = playerToConn[opponentId];
+			var opponentConnection = playerIdToConn[opponentId];
 			if (opponentConnection) {
 				opponentConnection.sendText(JSON.stringify({ type: "opponent_quit" }));
 			}
