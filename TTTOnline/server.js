@@ -1,15 +1,5 @@
 var ws = require("nodejs-websocket");
 
-// var TTTRemoteView = function() {
-	
-	
-	// this.updateField = function(fieldId, playerId) {
-		// console.log("TTTRemoteView.updateField");
-		
-		
-		
-	// };
-// };
 
 var TTTGameCtrl = function(id_one, id_two, tttGameView) {
 	var id_one = id_one;
@@ -23,12 +13,14 @@ var TTTGameCtrl = function(id_one, id_two, tttGameView) {
 	var gameFinished = false;
 	
 	var tooglePlayer = function() {
-		console.log("TTTGame.tooglePlayer currentPlayer = " + currentPlayer);
+		console.log("TTTGame.tooglePlayer currentPlayer (before) = " + currentPlayer);
 		
 		if (currentPlayer == id_one)
 			currentPlayer = id_two;
 		else if (currentPlayer == id_two)
 			currentPlayer = id_one;
+		
+		console.log("TTTGame.tooglePlayer currentPlayer (after) = " + currentPlayer);
 		
 	};
 	
@@ -86,7 +78,7 @@ var TTTGameCtrl = function(id_one, id_two, tttGameView) {
 		}
 		
 		if (playerId != currentPlayer) {
-			console.log("TTTGameCtrl.onPlayerMove : not this player");
+			console.log("TTTGameCtrl.onPlayerMove : not this player; currentPlayer = " + currentPlayer + " playerId = " + playerId);
 			return;
 		}
 		
@@ -159,12 +151,15 @@ var GameSession = function() {
 		tttCtrl = new TTTGameCtrl(id_one, id_two, this);
 		
 		var message = {
+			type : "startGame",
 			sessionId : this.getSessionId(),
-			playerId : id_one
+			playerId : id_one,
+			isFirst : true
 		};
 		connection_one.sendText(JSON.stringify(message));
 		
 		message.playerId = id_two;
+		message.isFirst = false;
 		connection_two.sendText(JSON.stringify(message));
 		
 	};
@@ -184,10 +179,10 @@ var GameSession = function() {
 				var playerId = message.playerId;
 				var fieldId = message.fieldId;
 				
-				if (!playerId || !fieldId) {
-					console.log("GameSession.onMessage : incomplete playerMove");
-					return;
-				}
+				// if (!playerId || !fieldId) {
+					// console.log("GameSession.onMessage : incomplete playerMove");
+					// return;
+				// }
 				
 				tttCtrl.onPlayerMove(playerId, fieldId);
 				
@@ -301,19 +296,19 @@ var server = ws.createServer(function (ws_connection) {
     ws_connection.on("close", function (code, reason) {
         console.log("closed.");
 		
-		var playerId = connToPlayerId[ws_connection];
-		console.log("onClose: player " + playerId + " quit");
+		// var playerId = connToPlayerId[ws_connection];
+		// console.log("onClose: player " + playerId + " quit");
 		
-		var opponentId = playerToPlayer[playerId];
-		console.log("onClose: opponentId: " + opponentId);
+		// var opponentId = playerToPlayer[playerId];
+		// console.log("onClose: opponentId: " + opponentId);
 		
-		if (opponentId) {
-			console.log("Inform opponent, that player quit.");
-			var opponentConnection = playerIdToConn[opponentId];
-			if (opponentConnection) {
-				opponentConnection.sendText(JSON.stringify({ type: "opponent_quit" }));
-			}
-		}
+		// if (opponentId) {
+			// console.log("Inform opponent, that player quit.");
+			// var opponentConnection = playerIdToConn[opponentId];
+			// if (opponentConnection) {
+				// opponentConnection.sendText(JSON.stringify({ type: "opponent_quit" }));
+			// }
+		// }
 				
     })
 }).listen(8001).on('error', function(err) { console.log("caught erro: " + err); } );

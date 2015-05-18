@@ -1,0 +1,36 @@
+.table-row {
+	width: 500px;
+	height: 180px;
+}
+.table-element{
+	margin: 5px;
+	padding: 10px;
+	border-style: solid; 
+	width:130px;
+	height:130px;
+	float:left;
+	background-color: white;
+}
+.top-box {
+	width: 500px;
+	height: 30px;
+}
+
+.bottom-box {
+	width: 500px;
+	height: 30px;
+}
+
+.player-info {
+	text-align: center;
+	font-family: "Lucida Console";
+}
+
+.reset-box {
+	float: right;
+}
+.center-box {
+	position: relative;
+	float: center;
+	width: 200px;
+}

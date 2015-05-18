@@ -1,19 +1,23 @@
 define(function() {
 	
-	function TTTGameView()
+	function TTTGameView(id_one, id_two)
 	{
-		this.UpdateField = function(fieldId, playerNo) {
-			console.log("TTTGameView.UpdateField : " + fieldId + " " + playerNo);
+		var id_one = id_one,
+			id_two = id_two;
+		
+		this.updateField = function(fieldId, playerId) {
+			console.log("TTTGameView.UpdateField : " + fieldId + " " + playerId);
 			
 			var field = document.getElementById("field_" + fieldId);
 			
-			if (playerNo === 1) {	
+			
+			if (playerId == id_one) {	
 				var img = document.createElement("img");
 				img.setAttribute("src", "./img/X.png");
 				
 				field.appendChild(img);
 			} 
-			else if (playerNo === 2) {
+			else if (playerId == id_two) {
 				var img = document.createElement("img");
 				img.setAttribute("src", "./img/O.png");
 				
@@ -21,7 +25,7 @@ define(function() {
 			}
 		}
 		
-		this.ResetView = function() {
+		this.resetView = function() {
 			console.log("TTTGameView.ResetView");
 			
 			var field;
@@ -37,19 +41,19 @@ define(function() {
 			
 		}
 		
-		this.UpdateCurrentPlayer = function(playerNo){
-			console.log("TTTGameView.UpdateCurrentPlayer : " + playerNo);
+		this.updateCurrentPlayer = function(playerId){
+			console.log("TTTGameView.UpdateCurrentPlayer : " + playerId);
 			
 			var cp = document.getElementById("currentPlayer");
-			cp.innerHTML = "Player " + playerNo + " round."
+			cp.innerHTML = "Player " + playerId + " round."
 			
 		}
 		
-		this.ShowWinner = function(playerNo) {
-			console.log("TTTGameView.ShowWinner : " + playerNo);
+		this.showWinner = function(playerId) {
+			console.log("TTTGameView.ShowWinner : " + playerId);
 			
 			var cp = document.getElementById("currentPlayer");
-			cp.innerHTML = "Game finished. Player " + playerNo + " won.";
+			cp.innerHTML = "Game finished. Player " + playerId + " won.";
 			
 		}
 	}

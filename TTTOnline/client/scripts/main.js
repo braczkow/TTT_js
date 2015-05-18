@@ -1,49 +1,86 @@
-var socket = new WebSocket("ws://localhost:8001");
-
-var connectionInitialized = false;
-
-var opponentInitialized = false;
-
-var sessionId;
-var playerId;
-
-socket.onopen = function() {
-	console.log('connected.');
+define(function(require) {
+	var socket = new WebSocket("ws://localhost:8001");
 	
-	connectionInitialized = true;
-	
-};
+	var TTTGameView = require("TTTGameView");
+	var tttView;
 
-socket.onmessage = function(text) {
-	console.log('onMessage:  ' + text.data);
-	
-	var message = JSON.parse(text.data);
-	
-	sessionId = message.sessionId;
-	
-	playerId = message.playerId;
+	var gameInitialized = false;
 
-};
+	var sessionId;
+	var playerId;
 
-function initialize() {
-	socket.send('first message');
-}
-
-var field = document.getElementById("field_0");
-field.addEventListener("click", function() {
-	console.log("onClick");
-	
-	console.log("About to post field tried");
-	
-	var message = 
-	{
-		type : "playerMove",
-		fieldId : 1,
-		playerId : playerId,
-		sessionId : sessionId
+	socket.onopen = function() {
+		console.log('connected.');
+		
 	};
-	
-	var text = JSON.stringify(message);
-	
-	socket.send(text);
+
+	socket.onmessage = function(text) {
+		console.log('onmessage:  ' + text.data);
+		var message = JSON.parse(text.data);
+		
+		if (!message.type) {
+			console.log("onmessage : empty type");
+			return;
+		}
+		
+		switch (message.type) {
+			case "startGame" :
+			console.log("onmessage : gameStarted");
+				sessionId = message.sessionId;
+				playerId = message.playerId;
+				
+				for (var i=0; i<9; i++)
+				{
+					(function() {
+						var field = document.getElementById("field_" + i);
+						var fieldId = i;
+						field.addEventListener("click", function() {
+							var message = 
+							{
+								type : "playerMove",
+								fieldId : fieldId,
+								playerId : playerId,
+								sessionId : sessionId
+							};
+							
+							var text = JSON.stringify(message);
+							
+							socket.send(text);
+						});
+					}())
+				}
+				
+				tttView = new TTTGameView(sessionId[0], sessionId[1]);
+			
+			break;
+			
+			case "updateField" :
+				console.log("onmessage : updateField");
+				
+				var fieldId = message.fieldId;
+				var playerId = message.playerId;
+				
+				tttView.updateField(fieldId, playerId);
+			
+			break;
+			
+			case "showWinner" : 
+				console.log("onmessage : showWinner");
+				
+				var winnerId = message.playerId;
+				
+				tttView.showWinner(winnerId);
+			
+			break;
+			
+			default:
+				console.log("onmessage : unknown message type");
+		}
+		
+		
+
+	};
+
+
+
 });
