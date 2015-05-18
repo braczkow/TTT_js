@@ -1,108 +1,131 @@
 var ws = require("nodejs-websocket");
 
-var playerId = 0;
-var connToPlayerId = {};
-var playerIdToConn = {};
-var playerToPlayer = {};
 
-var gameSessions = {};
 
-var freePlayerId = -1;
-
-function getPlayersTuple(playerA, playerB) {
-	var playerMin = (playerA < playerB ? playerA : playerB);
-	var playerMax = (playerA > playerB ? playerA : playerB);
+var GameSession = function() {
+	console.log("GameSession ctor");
 	
-	return [playerMin, playerMax];
-}
-
-function initializePlayer(conn) {
-	console.log("initializePlyaer");
+	var connection_one = 0;
+	var connection_two = 0;
 	
-	playerId++;
+	var id_one = 0;
+	var id_two = 0;
 	
-	connToPlayerId[conn] = playerId;
-	playerIdToConn[playerId] = conn;
+	//var tttCtrl = new TTTGameCtrl();
 	
-}
-	
-function addWaitingPlayer(conn) {
-	console.log("addWaitingPlayer");
-
-	freePlayerId = playerId;
-	playerToPlayer[playerId] = -1;
-	
-	var messageToThisPlayer = 
-	{
-		type: "opponent_NA"
+	this.addPlayerConnection = function(connection, id) {
+		console.log("GameSession.addPlayer");
+		
+		if (!connection_one) {
+			console.log("GameSession : assign connection_one");
+			connection_one = connection;
+			id_one = id;
+		}
+		else {
+			console.log("GameSession : assign connection_two"); 
+			connection_two = connection;
+			id_two = id;
+		}
 	}
-	conn.sendText(JSON.stringify(messageToThisPlayer));
-}
-
-function initializeGameSession() {
-	console.log("initializeGameSession");
 	
-	playerToPlayer[freePlayerId] = playerId;
-	playerToPlayer[playerId] = freePlayerId;
+	this.isInitialized = function() {
+		console.log("GameSession.isInitialized");
+		
+		console.log("returning : " + (id_one > 0 && id_two > 0));
+		console.log("" + id_one + " " + id_two);
+		
+		return (id_one > 0 && id_two > 0);
+	}
 	
-	var playersTuple = getPlayersTuple(playerId, freePlayerId);
+	this.getSessionId = function() {
+		console.log("GameSession.getIds");
+		
+		return [id_one, id_two];
+	}
 	
-	console.log("initializeGameSession : playersTuple " + playersTuple);
-	
-	var gameSession = 
-	{
-		gameState:[0, 0, 0, 0, 0, 0, 0, 0, 0], 
-		playerA: playersTuple[0],
-		playerB: playersTuple[1],
+	this.startGame = function() {
+		console.log("GameSession.startGame");
+		
+		var message = {
+			sessionId : this.getSessionId(),
+			playerId : id_one
+		};
+		connection_one.sendText(JSON.stringify(message));
+		
+		message.playerId = id_two;
+		connection_two.sendText(JSON.stringify(message));
+		
 	};
 	
-	gameSessions[playersTuple] = gameSession;
+	this.onMessage = function(message) {
+		console.log("GameSession.onMessage");
+	}
+		
+	
+};
 
-	sendOpponentInit(playersTuple[0], playersTuple[1]);
+var GameController = function() {
+	console.log("GameController ctor");
 	
-	sendOpponentInit(playersTuple[1], playersTuple[0]);
+	var lastId = 0;
 	
-	freePlayerId = -1;
-}
-
-function sendOpponentInit(playerA, playerB) {
-	console.log("sendOpponentInit");
+	var gameSessions = {};
 	
-	var message = 
-	{
-		type: "opponent_init",
-		opponentId: playerB
+	var waitingSession = new GameSession();
+	
+	this.onConnection = function(connection) {
+		console.log("GameController.onConnection");
+		
+		waitingSession.addPlayerConnection(connection, ++lastId);
+		
+		if (waitingSession.isInitialized()) {
+			console.log("GameController : create new waitingSession");
+			
+			gameSessions[waitingSession.getSessionId()] = waitingSession;
+			waitingSession.startGame();
+			
+			waitingSession = new GameSession();
+		}
+		
 	};
 	
-	if (playerIdToConn[playerA]) {
-		console.log("sendOpponentInit : connection exists.");
-		playerIdToConn[playerA].sendText(JSON.stringify(message));	
+	this.onText = function(text) {
+		console.log("GameController.onText");
+		
+		var message = JSON.parse(text);
+		
+		if (!message.sessionId) {
+			console.log("GameController.onText : no sessionId");
+			return;
+		}
+
+		var gameSession = gameSessions[message.sessionId];
+		if (!gameSession) {
+			console.log("GameController.onText : no gameSession");
+			return;
+		}
+		
+		gameSession.onMessage(message);
 	}
-	else {
-		console.log("sendOpponentInit : no connection.");
-	}
-}
- 
- 
-var server = ws.createServer(function (conn) {
+	
+	
+};
+
+var gameCtrl = new GameController();
+
+
+var server = ws.createServer(function (ws_connection) {
     console.log("createServer: connected.");
 	
-	initializePlayer(conn);
+	gameCtrl.onConnection(ws_connection);
 
-	if (freePlayerId === -1) {
-		addWaitingPlayer(conn);
-	}
-	else {
-		initializeGameSession();
-	}
 	
-	conn.on('error', function(err) {
+	ws_connection.on('error', function(err) {
 		console.log('caught error ' + err);
 	});
 		
 
-    conn.on("text", function (text) {
-		
+    ws_connection.on("text", function (text) {
 		console.log("onMessage: " + text);
 		var message = JSON.parse(text);
 		
@@ -110,7 +133,7 @@ var server = ws.createServer(function (conn) {
 			console.log("onMessage: field_clicked");
 			var fieldId = message.fieldId;
 	
-			var playerId = connToPlayerId[conn];
+			var playerId = connToPlayerId[ws_connection];
 			console.log('onMessage: playerId= ' + playerId);	
 
 			var opponentId = playerToPlayer[playerId];
@@ -123,7 +146,7 @@ var server = ws.createServer(function (conn) {
 					error: "no_opponent"
 				};
 				
-				conn.sendText(JSON.stringify(errMessage));
+				ws_connection.sendText(JSON.stringify(errMessage));
 				return;
 			}
 			
@@ -141,10 +164,10 @@ var server = ws.createServer(function (conn) {
 		
     })
 	
-    conn.on("close", function (code, reason) {
+    ws_connection.on("close", function (code, reason) {
         console.log("closed.");
 		
-		var playerId = connToPlayerId[conn];
+		var playerId = connToPlayerId[ws_connection];
 		console.log("onClose: player " + playerId + " quit");
 		
 		var opponentId = playerToPlayer[playerId];

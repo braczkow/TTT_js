@@ -16,19 +16,12 @@ socket.onmessage = function(text) {
 	
 	var message = JSON.parse(text.data);
 	
-	if (message.type == "opponent_init") {
-		console.log("onMessage: opponent_id");
-		if (message.opponentId) {
-			console.log("We are now fully initialized.");
-			opponentInitialized = true;
-		}
-	}
-	else if (message.type == "opponent_NA") {
-		console.log("opponent_NA");
-	}
-	else if (message.type == "opponent_quit") {
-		console.log("onMessage: opponent_quit");
-	}
+	var res = {
+		sessionId : message.sessionId,
+		text : "ACK"
+	};
+	
+	socket.send( JSON.stringify(res) );
 
 };
 
