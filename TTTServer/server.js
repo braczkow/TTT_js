@@ -1,5 +1,116 @@
 var ws = require("nodejs-websocket");
 
+// var TTTRemoteView = function() {
+	
+	
+	// this.updateField = function(fieldId, playerId) {
+		// console.log("TTTRemoteView.updateField");
+		
+		
+		
+	// };
+// };
+
+var TTTGameCtrl = function(id_one, id_two, tttGameView) {
+	var id_one = id_one;
+	var id_two = id_two;
+	
+	var tttView = tttGameView;
+	
+	var gameState = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+	var currentPlayer = id_one;
+	
+	var gameFinished = false;
+	
+	var tooglePlayer = function() {
+		console.log("TTTGame.tooglePlayer currentPlayer = " + currentPlayer);
+		
+		if (currentPlayer == id_one)
+			currentPlayer = id_two;
+		else if (currentPlayer == id_two)
+			currentPlayer = id_one;
+		
+	};
+	
+	var checkIfGameFinished = function() {
+		console.log("TTTGameCtrl.checkIfGameFinished");
+		
+		if (checkIfSameOfCurrentPlayer(0, 1, 2))
+			return true;
+		
+		if (checkIfSameOfCurrentPlayer(3, 4, 5))
+			return true;
+		
+		if (checkIfSameOfCurrentPlayer(6, 7, 8))
+			return true;
+		
+		if (checkIfSameOfCurrentPlayer(0, 3, 6))
+			return true;
+			
+		if (checkIfSameOfCurrentPlayer(1, 4, 7))
+			return true;
+		
+		if (checkIfSameOfCurrentPlayer(2, 5, 8))
+			return true;
+			
+		if (checkIfSameOfCurrentPlayer(0, 4, 8))
+			return true;
+		
+		if (checkIfSameOfCurrentPlayer(2, 4, 6))
+			return true;
+		
+		
+		return false;
+	};
+		
+	var checkIfSameOfCurrentPlayer = function(a, b, c) {
+		if (gameState[a] === currentPlayer &&
+			gameState[b] === currentPlayer &&
+			gameState[c] === currentPlayer)
+			return true;
+		
+		return false;
+	};
+	
+	this.onPlayerMove = function(playerId, fieldId) {
+		console.log("TTTGameCtrl.onPlayerMove");
+		
+		if (gameFinished) {
+			console.log("TTTGame.onPlayerMove - gameFinished");
+			return;
+		}
+		
+		if (fieldId > 8) {
+			console.log("TTTGameCtrl.onPlayerMove : invalid fieldId = " + fieldId);
+			return;
+		}
+		
+		if (playerId != currentPlayer) {
+			console.log("TTTGameCtrl.onPlayerMove : not this player");
+			return;
+		}
+		
+		if (gameState[fieldId] == 0) {
+			console.log("TTTGameCtrl.onPlayerMove : not clicked yet");
+			gameState[fieldId] = currentPlayer;
+			
+			tttView.updateField(fieldId, currentPlayer);
+
+			var wonTheGame = checkIfGameFinished();
+			
+			if (!wonTheGame) {
+				tooglePlayer();
+			
+				//tttView.updateCurrentPlayer(currentPlayer);
+			} 
+			else {
+				gameFinished = true;
+				tttView.showWinner(currentPlayer);
+			}
+		}
+	};
+	
+};
 
 
 var GameSession = function() {
@@ -10,8 +121,7 @@ var GameSession = function() {
 	
 	var id_one = 0;
 	var id_two = 0;
-	
-	//var tttCtrl = new TTTGameCtrl();
+	var tttCtrl;
 	
 	this.addPlayerConnection = function(connection, id) {
 		console.log("GameSession.addPlayer");
@@ -46,6 +156,8 @@ var GameSession = function() {
 	this.startGame = function() {
 		console.log("GameSession.startGame");
 		
+		tttCtrl = new TTTGameCtrl(id_one, id_two, this);
+		
 		var message = {
 			sessionId : this.getSessionId(),
 			playerId : id_one
@@ -59,8 +171,61 @@ var GameSession = function() {
 	
 	this.onMessage = function(message) {
 		console.log("GameSession.onMessage");
-	}
 		
+		if (!message.type) {
+			console.log("GameSession.onMessage : empty type!");
+			return;
+		}
+		
+		switch (message.type) {
+			case "playerMove" : 
+				console.log("GameSession.onMessage : playerMoved");
+				
+				var playerId = message.playerId;
+				var fieldId = message.fieldId;
+				
+				if (!playerId || !fieldId) {
+					console.log("GameSession.onMessage : incomplete playerMove");
+					return;
+				}
+				
+				tttCtrl.onPlayerMove(playerId, fieldId);
+				
+				
+				break;
+		
+		}
+		
+	}
+	
+	this.updateField = function(fieldId, playerId) {
+		console.log("GameSession.TTTRemoteView.updateField");
+		
+		var message = {
+			type : "updateField",
+			fieldId : fieldId,
+			playerId : playerId
+		};
+		
+		var text = JSON.stringify(message);
+		
+		connection_one.sendText(text);
+		connection_two.sendText(text);
+		
+	};
+	
+	this.showWinner = function(playerId) {
+		var message = {
+			type : "showWinner",
+			playerId : playerId
+		};
+		
+		var text = JSON.stringify(message);
+		
+		connection_one.sendText(text);
+		connection_two.sendText(text);
+	};
+	
 	
 };
 
@@ -126,41 +291,10 @@ var server = ws.createServer(function (ws_connection) {
 		
 
     ws_connection.on("text", function (text) {
-		console.log("onMessage: " + text);
-		var message = JSON.parse(text);
+		console.log("onText: " + text);
 		
-		if (message.type == "field_clicked") {
-			console.log("onMessage: field_clicked");
-			var fieldId = message.fieldId;
-	
-			var playerId = connToPlayerId[ws_connection];
-			console.log('onMessage: playerId= ' + playerId);	
-
-			var opponentId = playerToPlayer[playerId];
-			console.log('onMessage: opponentId = ' + opponentId);
-			
-			if (opponentId < 0)
-			{
-				var errMessage = 
-				{
-					error: "no_opponent"
-				};
-				
-				ws_connection.sendText(JSON.stringify(errMessage));
-				return;
-			}
-			
-			var playersTuple = getPlayersTuple(playerId, opponentId),
-			gameSession = gameSessions[playersTuple];
-			
-			console.log('onMessage: gameSession.gameState[fieldId] ' + gameSession.gameState[fieldId]);
-			
-			if (gameSession.gameState[fieldId] == 0)
-			{
-				console.log('onMessage: not clicked yet');
-				gameSession.gameState[fieldId] = playerId;
-			}
-		}
+		gameCtrl.onText(text);
+		
 		
     })
 	

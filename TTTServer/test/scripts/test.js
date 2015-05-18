@@ -4,6 +4,9 @@ var connectionInitialized = false;
 
 var opponentInitialized = false;
 
+var sessionId;
+var playerId;
+
 socket.onopen = function() {
 	console.log('connected.');
 	
@@ -16,12 +19,9 @@ socket.onmessage = function(text) {
 	
 	var message = JSON.parse(text.data);
 	
-	var res = {
-		sessionId : message.sessionId,
-		text : "ACK"
-	};
+	sessionId = message.sessionId;
 	
-	socket.send( JSON.stringify(res) );
+	playerId = message.playerId;
 
 };
 
@@ -33,23 +33,17 @@ var field = document.getElementById("field_0");
 field.addEventListener("click", function() {
 	console.log("onClick");
 	
-	if (!connectionInitialized) {
-		console.log("not initialized.");
-		return;
-	}
-	
-	if (!opponentInitialized) {
-		console.log("Waiting for opponent.");
-		return;
-	}
-	
 	console.log("About to post field tried");
 	
 	var message = 
 	{
-		type: "field_clicked",
-		fieldId: 1
+		type : "playerMove",
+		fieldId : 1,
+		playerId : playerId,
+		sessionId : sessionId
 	};
 	
-	socket.send(JSON.stringify(message));
+	var text = JSON.stringify(message);
+	
+	socket.send(text);
 });
