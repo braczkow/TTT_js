@@ -7,7 +7,7 @@ define(function(require) {
 		console.log('msg : ' + msg);
 	});
 
-	socket.emit('text', "blabla");
+	//socket.emit('text', "blabla");
 
 
 	var TTTGameView = require("TTTGameView");
@@ -37,6 +37,8 @@ define(function(require) {
 			console.log("onmessage : gameStarted");
 				sessionId = message.sessionId;
 				playerId = message.playerId;
+
+				console.log('startGame : sessionId : ' + sessionId + ' playerId ' + playerId);
 				
 				for (var i=0; i<9; i++)
 				{
@@ -52,9 +54,10 @@ define(function(require) {
 								sessionId : sessionId
 							};
 						
-							console.log("on click: about to send");	
 							var text = JSON.stringify(message);
 							
+							console.log("on click: about to send:" + text);
+								
 							socket.emit('text', text);
 						});
 					}())

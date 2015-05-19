@@ -99,8 +99,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.emit(text);
-		connection_two.emit(text);
+		connection_one.emit('text', text);
+		connection_two.emit('text', text);
 		
 	};
 	
@@ -112,8 +112,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.emit(text);
-		connection_two.emit(text);
+		connection_one.emit('text', text);
+		connection_two.emit('text', text);
 	};
 };
 

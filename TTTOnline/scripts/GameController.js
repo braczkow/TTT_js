@@ -26,9 +26,14 @@ var GameController = function() {
 	};
 	
 	this.onText = function(text) {
-		console.log("GameController.onText");
+		console.log("GameController.onText : " + text);
+	
+		console.log("GameController.onText - text type" + typeof(text));
+
+		 		
+		var message = JSON.parse(text);
+;
 		
-		var message = text;
 		
 		if (!message.sessionId) {
 			console.log("GameController.onText : no sessionId");
