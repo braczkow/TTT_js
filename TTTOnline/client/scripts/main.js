@@ -1,6 +1,15 @@
 define(function(require) {
-	var socket = new WebSocket("ws://localhost:8001");
+	console.log('we are here');
 	
+	var socket = io();
+	
+	socket.on('ack', function(msg) {
+		console.log('msg : ' + msg);
+	});
+
+	socket.emit('text', "blabla");
+
+
 	var TTTGameView = require("TTTGameView");
 	var tttView;
 
@@ -9,14 +18,14 @@ define(function(require) {
 	var sessionId;
 	var playerId;
 
-	socket.onopen = function() {
-		console.log('connected.');
-		
-	};
+	//socket.onopen = function() {
+	//	console.log('connected.');
+	//	
+	//};
 
-	socket.onmessage = function(text) {
-		console.log('onmessage:  ' + text.data);
-		var message = JSON.parse(text.data);
+	socket.on('text', function(text) {
+		console.log('onmessage:  ' + text);
+		var message = JSON.parse(text);
 		
 		if (!message.type) {
 			console.log("onmessage : empty type");
@@ -42,14 +51,17 @@ define(function(require) {
 								playerId : playerId,
 								sessionId : sessionId
 							};
-							
+						
+							console.log("on click: about to send");	
 							var text = JSON.stringify(message);
 							
-							socket.send(text);
+							socket.emit('text', text);
 						});
 					}())
 				}
 				
+				console.log("startGame : registered onClick");
+					
 				tttView = new TTTGameView(sessionId[0], sessionId[1]);
 			
 			break;
@@ -76,11 +88,7 @@ define(function(require) {
 			default:
 				console.log("onmessage : unknown message type");
 		}
+	});
 		
-		
-
-	};
-
-
 
 });

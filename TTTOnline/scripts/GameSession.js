@@ -51,11 +51,11 @@ var GameSession = function() {
 			playerId : id_one,
 			isFirst : true
 		};
-		connection_one.sendText(JSON.stringify(message));
+		connection_one.emit('text', JSON.stringify(message));
 		
 		message.playerId = id_two;
 		message.isFirst = false;
-		connection_two.sendText(JSON.stringify(message));
+		connection_two.emit('text', JSON.stringify(message));
 		
 	};
 	
@@ -99,8 +99,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.sendText(text);
-		connection_two.sendText(text);
+		connection_one.emit(text);
+		connection_two.emit(text);
 		
 	};
 	
@@ -112,8 +112,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.sendText(text);
-		connection_two.sendText(text);
+		connection_one.emit(text);
+		connection_two.emit(text);
 	};
 };
 
