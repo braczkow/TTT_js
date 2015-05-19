@@ -1,12 +1,31 @@
 define(function() {
 	
-	function TTTGameView(id_one, id_two)
+	function TTTGameView()
 	{
-		var id_one = id_one,
-			id_two = id_two;
+		var id_one,
+			id_two;
+
+		this.showInfo = function(message) {
+			console.log('TTTGameView.showInfo');
+
+			var cp = document.getElementById("currentPlayer");
+			cp.innerHTML = message;
+		};
+
+		this.setIds = function (one, two) {
+			console.log('TTTGameView.setIds');
+
+			id_one = one;
+			id_two = two;
+
+		};
+
 		
 		this.updateField = function(fieldId, playerId) {
 			console.log("TTTGameView.UpdateField : " + fieldId + " " + playerId);
+		
+			console.log('TTTGameView.UpdateField : id_one: ' + id_one + ' id_two: ' + id_two);
+			
 			
 			var field = document.getElementById("field_" + fieldId);
 			

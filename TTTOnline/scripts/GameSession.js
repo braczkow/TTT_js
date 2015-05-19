@@ -17,6 +17,9 @@ var GameSession = function() {
 			console.log("GameSession : assign connection_one");
 			connection_one = connection;
 			id_one = id;
+
+			this.sendWaitingNotice();
+
 		}
 		else {
 			console.log("GameSession : assign connection_two"); 
@@ -24,6 +27,18 @@ var GameSession = function() {
 			id_two = id;
 		}
 	}
+
+	this.sendWaitingNotice = function() {
+		console.log('GameSession.sendWaitingNotice');
+
+		var message = {
+			yourId : id_one
+		};
+
+		var text = JSON.stringify(message);
+
+		connection_one.emit('waitingNotice', text);
+	};
 	
 	this.isInitialized = function() {
 		console.log("GameSession.isInitialized");

@@ -3,15 +3,9 @@ define(function(require) {
 	
 	var socket = io();
 	
-	socket.on('ack', function(msg) {
-		console.log('msg : ' + msg);
-	});
-
-	//socket.emit('text', "blabla");
-
 
 	var TTTGameView = require("TTTGameView");
-	var tttView;
+	var tttView = new TTTGameView();
 
 	var gameInitialized = false;
 
@@ -22,6 +16,14 @@ define(function(require) {
 	//	console.log('connected.');
 	//	
 	//};
+
+	socket.on('waitingNotice', function(text) {
+		console.log('on waitingNotice');
+
+		var message = JSON.parse(text);
+
+		tttView.showInfo('We are waiting for other player to join.');
+	});
 
 	socket.on('showWinner', function(text) {
 		console.log('on showWinner');
@@ -80,68 +82,10 @@ define(function(require) {
 		
 		console.log("startGame : registered onClick");
 			
-		tttView = new TTTGameView(sessionId[0], sessionId[1]);
+		tttView.setIds(sessionId[0], sessionId[1]);
+
+		tttView.showInfo('Game starts. \n Your id: ' + playerId);
 
 	});
-
-
-
-//	socket.on('text', function(text) {
-//		console.log('onmessage:  ' + text);
-//		var message = JSON.parse(text);
-//		
-//		if (!message.type) {
-//			console.log("onmessage : empty type");
-//			return;
-//		}
-//		
-//		switch (message.type) {
-//			case "startGame" :
-//			console.log("onmessage : gameStarted");
-//				sessionId = message.sessionId;
-//				playerId = message.playerId;
-//
-//				console.log('startGame : sessionId : ' + sessionId + ' playerId ' + playerId);
-//				
-//				for (var i=0; i<9; i++) {
-//					(function() {
-//						var field = document.getElementById("field_" + i);
-//						var fieldId = i;
-//						field.addEventListener("click", function() {
-//							var message = 
-//							{
-//								type : "playerMove",
-//								fieldId : fieldId,
-//								playerId : playerId,
-//								sessionId : sessionId
-//							};
-//						
-//							var text = JSON.stringify(message);
-//							
-//							console.log("on click: about to send:" + text);
-//								
-//							socket.emit('playerMove', text);
-//						});
-//					}())
-//				}
-//				
-//				console.log("startGame : registered onClick");
-//					
-//				tttView = new TTTGameView(sessionId[0], sessionId[1]);
-//			
-//			break;
-//
-//			
-//			case "showWinner" : 
-//				console.log("onmessage : showWinner");
-//				
-//							
-//			break;
-//			
-//			default:
-//				console.log("onmessage : unknown message type");
-//		}
-//	});
-		
 
 });
