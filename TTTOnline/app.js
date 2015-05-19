@@ -31,6 +31,13 @@ io.on('connection', function(socket){
 		gameCtrl.onText(text);	
 
 	});
+
+	socket.on('playerMove', function(text) {
+		console.log('on playerMove');
+
+		gameCtrl.onPlayerMove(text);
+
+	});
 	
 	
 

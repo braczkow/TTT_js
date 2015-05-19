@@ -24,16 +24,12 @@ var GameController = function() {
 		}
 		
 	};
-	
-	this.onText = function(text) {
-		console.log("GameController.onText : " + text);
-	
-		console.log("GameController.onText - text type" + typeof(text));
 
-		 		
-		var message = JSON.parse(text);
-;
+	this.onPlayerMove = function (text) {
+		console.log('GameController.onPlayerMove');
 		
+		var message = JSON.parse(text);
+
 		
 		if (!message.sessionId) {
 			console.log("GameController.onText : no sessionId");
@@ -46,8 +42,34 @@ var GameController = function() {
 			return;
 		}
 		
-		gameSession.onMessage(message);
-	}
+		gameSession.onPlayerMove(message);
+		
+	};
+
+	
+//	this.on = function(text) {
+//		console.log("GameController.onText : " + text);
+//	
+//		console.log("GameController.onText - text type" + typeof(text));
+//
+//		 		
+//		var message = JSON.parse(text);
+//;
+//		
+//		
+//		if (!message.sessionId) {
+//			console.log("GameController.onText : no sessionId");
+//			return;
+//		}
+//
+//		var gameSession = gameSessions[message.sessionId];
+//		if (!gameSession) {
+//			console.log("GameController.onText : no gameSession");
+//			return;
+//		}
+//		
+//		gameSession.onMessage(message);
+//	}
 	
 	
 };

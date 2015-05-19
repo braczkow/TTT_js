@@ -51,42 +51,46 @@ var GameSession = function() {
 			playerId : id_one,
 			isFirst : true
 		};
-		connection_one.emit('text', JSON.stringify(message));
+		connection_one.emit('startGame', JSON.stringify(message));
 		
 		message.playerId = id_two;
 		message.isFirst = false;
-		connection_two.emit('text', JSON.stringify(message));
+		connection_two.emit('startGame', JSON.stringify(message));
 		
 	};
-	
-	this.onMessage = function(message) {
-		console.log("GameSession.onMessage");
-		
-		if (!message.type) {
-			console.log("GameSession.onMessage : empty type!");
-			return;
-		}
-		
-		switch (message.type) {
-			case "playerMove" : 
-				console.log("GameSession.onMessage : playerMoved");
+
+	this.onPlayerMove = function(message) {
+		console.log('GameSession.onPlayerMove');
+		var playerId = message.playerId;
+		var fieldId = message.fieldId;
 				
-				var playerId = message.playerId;
-				var fieldId = message.fieldId;
-				
-				// if (!playerId || !fieldId) {
-					// console.log("GameSession.onMessage : incomplete playerMove");
-					// return;
-				// }
-				
-				tttCtrl.onPlayerMove(playerId, fieldId);
-				
-				
-				break;
-		
-		}
-		
-	}
+		tttCtrl.onPlayerMove(playerId, fieldId);
+	};
+
+//	this.onMessage = function(message) {
+//		console.log("GameSession.onMessage");
+//		
+//		if (!message.type) {
+//			console.log("GameSession.onMessage : empty type!");
+//			return;
+//		}
+//		
+//		switch (message.type) {
+//			case "playerMove" : 
+//				console.log("GameSession.onMessage : playerMoved");
+//				
+//				var playerId = message.playerId;
+//				var fieldId = message.fieldId;
+//				
+//				
+//				tttCtrl.onPlayerMove(playerId, fieldId);
+//				
+//				
+//				break;
+//		
+//		}
+//		
+//	}
 	
 	this.updateField = function(fieldId, playerId) {
 		console.log("GameSession.TTTRemoteView.updateField");
@@ -99,8 +103,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.emit('text', text);
-		connection_two.emit('text', text);
+		connection_one.emit('updateField', text);
+		connection_two.emit('updateField', text);
 		
 	};
 	
@@ -112,8 +116,8 @@ var GameSession = function() {
 		
 		var text = JSON.stringify(message);
 		
-		connection_one.emit('text', text);
-		connection_two.emit('text', text);
+		connection_one.emit('showWinner', text);
+		connection_two.emit('showWinner', text);
 	};
 };
 
